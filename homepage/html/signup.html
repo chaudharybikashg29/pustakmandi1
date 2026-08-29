@@ -1,0 +1,243 @@
+ <!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Create Account | PustakMandi</title>
+
+    <link rel="stylesheet"
+          href="../css/signup.css">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- LEFT PANEL -->
+
+    <div class="left">
+
+        <div class="overlay">
+
+            <h1>Join PustakMandi</h1>
+
+            <p>
+
+                Create your account and start buying
+                or selling books, notes, electronics
+                and campus essentials.
+
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+
+    <div class="right">
+           <div>
+               <div class="p-logo-container">
+                  <img 
+                    class="p-logo" 
+                    src="../images/pustakmandi.jpg"
+                    alt="PustakMandi Logo">
+                  </div>
+
+        
+              <form class="signup-form" action="../../register.php" method="POST" onsubmit="return validateForm();">
+
+            <h2>Create Account</h2>
+                
+            <div class="row">
+
+                <div class="input-box">
+
+                    <i class="fa fa-user"></i>
+
+                    <input type="text"
+                        id="full_name"
+                           name="full_name"
+                           placeholder="Full Name"
+                           required>
+
+                </div>
+
+                 
+
+                <div class="input-box">
+
+                        <i class="fa fa-user"></i>
+
+                    <input type="text"
+                            id="username"
+                           placeholder="Username"
+                           name="username"
+                           required>
+
+                </div>
+
+            </div>
+
+            <div class="input-box">
+
+                <i class="fa fa-envelope"></i>
+
+                <input type="email"
+                        id="email"
+                          name="email"
+                       placeholder="Email Address"
+                       required>
+
+            </div>
+
+            <div class="input-box">
+
+                <i class="fa fa-phone"></i>
+
+                <input type="tel"
+                          id="phone"
+                       placeholder="Phone Number"
+                       name="phone"
+                       maxlength="10"
+                       required>
+
+            </div>
+
+            <div class="input-box">
+
+                <i class="fa fa-school"></i>
+
+                <select name="college_name" id="college_name" required>
+
+                    <option value="">Select College</option>
+
+                    <option>Tribhuvan University</option>
+
+                    <option>Kathmandu University</option>
+
+                    <option>Pokhara University</option>
+
+                    <option>Purbanchal University</option>
+
+                </select>
+
+            </div>
+
+            <div class="input-box">
+
+                <i class="fa fa-lock"></i>
+
+                <input type="password"
+                       id="password"
+                       name="password"
+                       placeholder="Password"
+                       required>
+
+                <span id="togglePassword">
+
+                    <i class="fa fa-eye"></i>
+
+                </span>
+
+            </div>
+                       
+                 <!-- CONFIRM PASSWORD -->
+            <div class="input-box">
+
+                <i class="fa fa-lock"></i>
+
+                <input type="password"
+                       id="confirmPassword"
+                       name="confirmPassword"
+                       placeholder="Confirm Password"
+                       required>
+
+            </div>
+            <div class="input-box">
+                     <i class="fa fa-user-tag"></i>
+                     <select name="role" id="role" required>
+                          <option value="">Select Role</option>
+                          <option value="seller">🛍️ Seller</option>
+                          <option value="customer">🛒 Customer</option>
+                    </select>
+            </div>
+               <!-- ERROR MESSAGE -->
+
+                <div
+                    class="error"
+                    id="error">
+                </div>
+
+
+            <div class="strength">
+
+                <div id="strengthBar"></div>
+
+            </div>
+            
+
+            <div class="upload">
+
+                <label for="profile_photo">
+
+                    Profile Photo
+
+                </label>
+
+                <input type="file" 
+                       id="profile_photo" 
+                       name="profile_photo" 
+                       accept="image/jpeg,image/png,image/jpg,image/webp">
+
+            </div>
+
+            <label class="terms">
+
+                <input type="checkbox" id="terms" name="terms" required>
+
+                I agree to the Terms & Conditions
+
+            </label>
+
+            <button type="submit" class="signup-btn">
+
+                Create Account
+
+            </button>
+
+            <p class="login-link">
+
+                Already have an account?
+
+                <a href="login.html">
+
+                    Login
+
+                </a>
+
+            </p>
+
+        </form>
+           </div>
+    </div>
+
+</div>
+
+<script src="../js/signup.js"></script>
+
+
+</body>
+</html>

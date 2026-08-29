@@ -1,0 +1,234 @@
+/* ==========================================
+   PUSTAKMANDI — CUSTOMER DASHBOARD
+   Additive styles only. Reuses variables, cards,
+   buttons, nav and footer already defined in style.css
+========================================== */
+
+/* ===========================
+WELCOME (dashboard's version of the hero)
+=========================== */
+
+
+.welcome{
+    background:linear-gradient(135deg,var(--dark),#1e293b);
+    padding:70px 8%;
+}
+
+.welcome-content{
+    max-width:1300px;
+    margin:auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:50px;
+    flex-wrap:wrap;
+}
+
+.welcome-small{
+    display:inline-block;
+    color:var(--accent);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:12px;
+}
+
+.welcome-content h1{
+    color:white;
+    font-size:42px;
+    margin-bottom:16px;
+}
+
+.welcome-content > div > p{
+    color:#cbd5e1;
+    font-size:17px;
+    line-height:1.8;
+    max-width:440px;
+    margin-bottom:28px;
+}
+
+/* Quick profile card, in the primary blue family */
+.user-card{
+    background:white;
+    border-radius:20px;
+    padding:32px 34px;
+    text-align:center;
+    min-width:230px;
+    box-shadow:0 20px 40px rgba(0,0,0,.25);
+}
+
+.user-avatar{
+    width:64px;
+    height:64px;
+    border-radius:50%;
+    background:var(--primary);
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:24px;
+    margin:0 auto 14px;
+}
+
+.user-card h3{
+    color:var(--dark);
+    margin-bottom:4px;
+}
+
+.user-card p{
+    color:var(--gray);
+    font-size:14px;
+    margin-bottom:16px;
+}
+
+.user-card a{
+    display:inline-block;
+    color:var(--primary);
+    font-weight:600;
+    font-size:14px;
+    border-bottom:2px solid var(--primary);
+    padding-bottom:2px;
+    transition:.3s;
+}
+
+.user-card a:hover{
+    color:var(--secondary);
+    border-color:var(--secondary);
+}
+
+/* ===========================
+PROFILE WIDGET (navbar, right side)
+=========================== */
+
+.profile{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding-left:18px;
+    border-left:1px solid #e2e8f0;
+}
+
+.profile-icon{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    background:var(--primary);
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+}
+
+.profile-info{
+    display:flex;
+    flex-direction:column;
+    line-height:1.25;
+}
+
+.profile-info strong{
+    font-size:14px;
+    color:var(--dark);
+}
+
+.profile-info small{
+    font-size:12px;
+    color:var(--gray);
+}
+
+/* ===========================
+QUICK ACTIONS
+=========================== */
+
+.quick-actions{
+    max-width:1300px;
+    margin:-40px auto 0;
+    padding:0 8%;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:24px;
+    position:relative;
+    z-index:5;
+}
+
+.action-card{
+    background:white;
+    border-radius:20px;
+    padding:24px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.08);
+    transition:.35s;
+    cursor:pointer;
+}
+
+.action-card:hover{
+    transform:translateY(-8px);
+    box-shadow:0 20px 40px rgba(37,99,235,.18);
+}
+
+.action-card i{
+    width:48px;
+    height:48px;
+    border-radius:12px;
+    background:#dbeafe;
+    color:var(--primary);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+    flex-shrink:0;
+}
+
+.action-card h3{
+    font-size:16px;
+    color:var(--dark);
+    margin-bottom:4px;
+}
+
+.action-card p{
+    font-size:13px;
+    color:var(--gray);
+}
+
+/* ===========================
+RESPONSIVE
+=========================== */
+
+@media(max-width:992px){
+    .welcome-content{
+        flex-direction:column;
+        text-align:center;
+    }
+    .welcome-content > div > p{
+        margin-left:auto;
+        margin-right:auto;
+    }
+    .quick-actions{
+        grid-template-columns:repeat(2,1fr);
+        margin-top:20px;
+    }
+    .profile{
+        border-left:none;
+        padding-left:0;
+    }
+}
+
+@media(max-width:576px){
+    .quick-actions{
+        grid-template-columns:1fr;
+    }
+    .welcome-content h1{
+        font-size:32px;
+    }
+}
+/* ==========================================
+   CUSTOMER DASHBOARD PRODUCT FIX
+========================================== */
+
+.product-grid .product-card {
+    opacity: 1;
+    transform: translateY(0);
+}
