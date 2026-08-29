@@ -70,19 +70,18 @@ CREATE TABLE cart (
     FOREIGN KEY (user_id)    REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
--- -----------------------------------------------------
--- Table: wishlist
--- -----------------------------------------------------
+-- ------------------------------------------
+-- WISHLIST  (one row per user+product, like cart but no quantity)
+-- ------------------------------------------
 CREATE TABLE wishlist (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    customer_id INT NOT NULL,
-    product_id INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_wishlist_item (customer_id, product_id)
-) ENGINE=InnoDB;
-
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    user_id     INT NOT NULL,
+    product_id  INT NOT NULL,
+    added_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_wishlist_item (user_id, product_id),
+    FOREIGN KEY (user_id)    REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
 -- -----------------------------------------------------
 -- Table: orders
 -- -----------------------------------------------------
@@ -137,10 +136,21 @@ INSERT INTO users (name, email, password, role, status) VALUES
 -- use PHP's password_hash('Admin@123', PASSWORD_DEFAULT) to generate a real one, then
 -- UPDATE users SET password = '<hash>' WHERE email = 'admin@pustakmandi.com';
 
-INSERT INTO categories (name, slug, description) VALUES
-('Fiction', 'fiction', 'Novels and fictional stories'),
-('Non-Fiction', 'non-fiction', 'Real world topics and facts'),
-('Academic', 'academic', 'Textbooks and academic references'),
-('Children', 'children', 'Books for kids'),
-('Self Help', 'self-help', 'Personal growth and motivation'),
-('Comics', 'comics', 'Comics and graphic novels');
+INSERT INTO categories (name, icon) VALUES
+('Books',       'fa-solid fa-book'),
+('Notes',       'fa-solid fa-file-lines'),
+('Laptops',     'fa-solid fa-laptop'),
+('Calculators', 'fa-solid fa-calculator'),
+('Mobiles',     'fa-solid fa-mobile-screen-button'),
+('Hostel Items','fa-solid fa-couch');
+ 
+INSERT INTO products (title, description, price, old_price, category_id, image, stock, rating) VALUES
+('Operating System Book', 'Core OS concepts textbook, latest edition.', 850.00, NULL,
+    1, 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500', 12, 4.9),
+('HP Pavilion Laptop', 'Used, good condition, 8GB RAM / 512GB SSD.', 52000.00, 58000.00,
+    3, 'https://images.unsplash.com/photo-1517336714739-489689fd1ca8?w=500', 3, 4.6),
+('Casio FX-991ES Plus', 'Scientific calculator, exam-approved.', 1800.00, NULL,
+    4, 'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=500', 20, 5.0),
+('College Backpack', 'Water-resistant, laptop compartment.', 1500.00, 1900.00,
+    6, 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=500', 8, 4.5);
+ 

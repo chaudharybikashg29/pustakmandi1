@@ -2,7 +2,7 @@
 
 session_start();
 
-require_once "config/db.php";
+require_once "config/db.php"; // gives you $pdo
 
 
 // ==========================================
@@ -131,70 +131,28 @@ if (!in_array($role, $allowedRoles, true)) {
 // CHECK EMAIL
 // ==========================================
 
-$sql = "SELECT user_id FROM users WHERE email = ?";
+$stmt = $pdo->prepare("SELECT user_id FROM users WHERE email = :email");
+$stmt->execute(['email' => $email]);
 
-$stmt = mysqli_prepare($conn, $sql);
-
-if (!$stmt) {
-
-    die("Database error.");
-
-}
-
-mysqli_stmt_bind_param(
-    $stmt,
-    "s",
-    $email
-);
-
-mysqli_stmt_execute($stmt);
-
-mysqli_stmt_store_result($stmt);
-
-if (mysqli_stmt_num_rows($stmt) > 0) {
-
-    mysqli_stmt_close($stmt);
+if ($stmt->fetch()) {
 
     die("Email already exists.");
 
 }
-
-mysqli_stmt_close($stmt);
 
 
 // ==========================================
 // CHECK USERNAME
 // ==========================================
 
-$sql = "SELECT user_id FROM users WHERE username = ?";
+$stmt = $pdo->prepare("SELECT user_id FROM users WHERE username = :username");
+$stmt->execute(['username' => $username]);
 
-$stmt = mysqli_prepare($conn, $sql);
-
-if (!$stmt) {
-
-    die("Database error.");
-
-}
-
-mysqli_stmt_bind_param(
-    $stmt,
-    "s",
-    $username
-);
-
-mysqli_stmt_execute($stmt);
-
-mysqli_stmt_store_result($stmt);
-
-if (mysqli_stmt_num_rows($stmt) > 0) {
-
-    mysqli_stmt_close($stmt);
+if ($stmt->fetch()) {
 
     die("Username already exists.");
 
 }
-
-mysqli_stmt_close($stmt);
 
 
 // ==========================================
@@ -325,44 +283,27 @@ $sql = "INSERT INTO users
             college,
             profile_pic
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        VALUES (:full_name, :username, :email, :phone, :password, :role, :college, :profile_pic)";
 
-
-$stmt = mysqli_prepare($conn, $sql);
-
-if (!$stmt) {
-
-    die(
-        "Registration failed: " .
-        mysqli_error($conn)
-    );
-
-}
-
-
-mysqli_stmt_bind_param(
-    $stmt,
-    "ssssssss",
-    $full_name,
-    $username,
-    $email,
-    $phone,
-    $hashedPassword,
-    $role,
-    $college_name,
-    $profilePic
-);
+$stmt = $pdo->prepare($sql);
 
 
 // ==========================================
 // EXECUTE INSERT
 // ==========================================
 
-if (mysqli_stmt_execute($stmt)) {
+try {
 
-    mysqli_stmt_close($stmt);
-
-    mysqli_close($conn);
+    $stmt->execute([
+        'full_name'   => $full_name,
+        'username'    => $username,
+        'email'       => $email,
+        'phone'       => $phone,
+        'password'    => $hashedPassword,
+        'role'        => $role,
+        'college'     => $college_name,
+        'profile_pic' => $profilePic,
+    ]);
 
     echo "
         <script>
@@ -374,13 +315,11 @@ if (mysqli_stmt_execute($stmt)) {
 
     exit();
 
-} else {
+} catch (PDOException $e) {
 
     die(
         "Registration failed: " .
-        mysqli_error($conn)
+        $e->getMessage()
     );
 
 }
-
-?>

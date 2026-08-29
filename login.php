@@ -2,7 +2,7 @@
 
 session_start();
 
-require_once "config/db.php";
+require_once "config/db.php"; // this gives you $pdo
 
 
 // ==========================================
@@ -50,51 +50,20 @@ $sql = "SELECT
             role,
             status
         FROM users
-        WHERE username = ? OR email = ?
+        WHERE username = :login OR email = :login
         LIMIT 1";
 
+$stmt = $pdo->prepare($sql);
+$stmt->execute(['login' => $login]);
 
-$stmt = mysqli_prepare($conn, $sql);
-
-
-if (!$stmt) {
-
-    die("Database error.");
-
-}
-
-
-// Bind login value twice:
-// once for username
-// once for email
-
-mysqli_stmt_bind_param(
-    $stmt,
-    "ss",
-    $login,
-    $login
-);
-
-
-// Execute query
-
-mysqli_stmt_execute($stmt);
-
-
-// Get result
-
-$result = mysqli_stmt_get_result($stmt);
+$row = $stmt->fetch();
 
 
 // ==========================================
 // CHECK USER
 // ==========================================
 
-if (mysqli_num_rows($result) === 0) {
-
-    mysqli_stmt_close($stmt);
-
-    mysqli_close($conn);
+if (!$row) {
 
     echo "
         <script>
@@ -108,20 +77,11 @@ if (mysqli_num_rows($result) === 0) {
 }
 
 
-// Get user data
-
-$row = mysqli_fetch_assoc($result);
-
-
 // ==========================================
 // CHECK ACCOUNT STATUS
 // ==========================================
 
 if ($row['status'] !== 'active') {
-
-    mysqli_stmt_close($stmt);
-
-    mysqli_close($conn);
 
     echo "
         <script>
@@ -140,10 +100,6 @@ if ($row['status'] !== 'active') {
 // ==========================================
 
 if (!password_verify($password, $row['password'])) {
-
-    mysqli_stmt_close($stmt);
-
-    mysqli_close($conn);
 
     echo "
         <script>
@@ -187,31 +143,10 @@ $_SESSION['role'] = $row['role'];
 $updateLogin =
     "UPDATE users
      SET last_login = CURRENT_TIMESTAMP
-     WHERE user_id = ?";
+     WHERE user_id = :id";
 
-
-$updateStmt =
-    mysqli_prepare($conn, $updateLogin);
-
-
-if ($updateStmt) {
-
-    mysqli_stmt_bind_param(
-        $updateStmt,
-        "i",
-        $row['user_id']
-    );
-
-    mysqli_stmt_execute($updateStmt);
-
-    mysqli_stmt_close($updateStmt);
-
-}
-
-
-// Close original statement
-
-mysqli_stmt_close($stmt);
+$updateStmt = $pdo->prepare($updateLogin);
+$updateStmt->execute(['id' => $row['user_id']]);
 
 
 // ==========================================
@@ -249,13 +184,6 @@ switch ($row['role']) {
 
         session_destroy();
 
-        mysqli_close($conn);
-
         die("Invalid user role.");
 
 }
-
-
-mysqli_close($conn);
-
-?>

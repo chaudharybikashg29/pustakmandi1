@@ -56,6 +56,14 @@ $stmt->execute($params);
 $products = $stmt->fetchAll();
 
 /* ==========================================
+   WISHLIST PRODUCT IDS (to fill the heart for saved items)
+========================================== */
+
+$wishlistStmt = $pdo->prepare("SELECT product_id FROM wishlist WHERE user_id = ?");
+$wishlistStmt->execute([$_SESSION['user_id']]);
+$wishlistedIds = array_column($wishlistStmt->fetchAll(), 'product_id');
+
+/* ==========================================
    CART COUNT (for the navbar icon)
 ========================================== */
 
@@ -66,7 +74,7 @@ $cartCountStmt->execute([$_SESSION['user_id']]);
 $cartCount = $cartCountStmt->fetch()['total'];
 
 /* ==========================================
-   FLASH MESSAGE (set by cart_actions.php)
+   FLASH MESSAGE (set by cart_actions.php / wishlist_actions.php)
 ========================================== */
 
 $flash = $_SESSION['flash'] ?? null;
@@ -124,6 +132,11 @@ unset($_SESSION['flash']);
         </div>
 
         <div class="icons">
+
+            <a href="wishlist.php" class="icon">
+                <i class="fa-solid fa-heart"></i>
+                <span>Wishlist</span>
+            </a>
 
             <a href="cart.php" class="icon">
                 <i class="fa-solid fa-cart-shopping"></i>
@@ -193,13 +206,25 @@ unset($_SESSION['flash']);
 
             <?php foreach ($products as $product): ?>
 
+                <?php $isWishlisted = in_array($product['id'], $wishlistedIds); ?>
+
                 <div class="product-card">
 
                     <?php if ($product['old_price']): ?>
                         <span class="sale">SALE</span>
                     <?php endif; ?>
 
-                    <button class="wishlist-btn"><i class="fa-regular fa-heart"></i></button>
+                    <!-- WISHLIST TOGGLE -->
+                    <form action="wishlist_actions.php" method="post">
+                        <input type="hidden" name="action" value="toggle">
+                        <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
+                        <input type="hidden" name="redirect"
+                               value="products.php<?php echo !empty($_SERVER['QUERY_STRING']) ? '?' . htmlspecialchars($_SERVER['QUERY_STRING']) : ''; ?>">
+                        <button type="submit" class="wishlist-btn" title="<?php echo $isWishlisted ? 'Remove from wishlist' : 'Save to wishlist'; ?>">
+                            <i class="fa-<?php echo $isWishlisted ? 'solid' : 'regular'; ?> fa-heart"
+                               style="<?php echo $isWishlisted ? 'color:#ef4444;' : ''; ?>"></i>
+                        </button>
+                    </form>
 
                     <img src="<?php echo htmlspecialchars($product['image']); ?>"
                          alt="<?php echo htmlspecialchars($product['title']); ?>">
