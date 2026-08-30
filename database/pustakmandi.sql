@@ -85,6 +85,21 @@ CREATE TABLE wishlist (
 -- -----------------------------------------------------
 -- Table: orders
 -- -----------------------------------------------------
+CREATE TABLE orders (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    user_id        INT NOT NULL,
+    full_name      VARCHAR(100) NOT NULL,
+    phone          VARCHAR(20)  NOT NULL,
+    address        VARCHAR(255) NOT NULL,
+    total_amount   DECIMAL(10,2) NOT NULL,
+    status         ENUM('pending','confirmed','shipped','delivered','cancelled') DEFAULT 'pending',
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- -----------------------------------------------------
+-- Table: order_items
+-- -----------------------------------------------------
 CREATE TABLE order_items (
     id          INT AUTO_INCREMENT PRIMARY KEY,
     order_id    INT NOT NULL,
@@ -94,24 +109,6 @@ CREATE TABLE order_items (
     FOREIGN KEY (order_id)   REFERENCES orders(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
- 
-
--- -----------------------------------------------------
--- Table: order_items
--- -----------------------------------------------------
-CREATE TABLE order_items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    order_id INT NOT NULL,
-    product_id INT NOT NULL,
-    seller_id INT NOT NULL,
-    quantity INT NOT NULL DEFAULT 1,
-    price DECIMAL(10,2) NOT NULL,
-    subtotal DECIMAL(10,2) NOT NULL,
-    item_status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') NOT NULL DEFAULT 'pending',
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-    FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
 
 -- -----------------------------------------------------
 -- Table: contact_messages (for contact.php form)

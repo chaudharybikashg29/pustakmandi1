@@ -226,12 +226,14 @@ unset($_SESSION['flash']);
                         </button>
                     </form>
 
-                    <img src="<?php echo htmlspecialchars($product['image']); ?>"
-                         alt="<?php echo htmlspecialchars($product['title']); ?>">
+                    <a href="product_details.php?id=<?php echo $product['id']; ?>">
+                        <img src="<?php echo htmlspecialchars($product['image']); ?>"
+                             alt="<?php echo htmlspecialchars($product['title']); ?>">
+                    </a>
 
                     <div class="product-info">
 
-                        <h3><?php echo htmlspecialchars($product['title']); ?></h3>
+                        <h3><a href="product_details.php?id=<?php echo $product['id']; ?>" style="color:inherit;"><?php echo htmlspecialchars($product['title']); ?></a></h3>
 
                         <div class="rating">
                             <?php echo str_repeat('⭐', (int) round($product['rating'])); ?>
