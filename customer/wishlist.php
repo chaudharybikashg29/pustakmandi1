@@ -24,6 +24,17 @@ $stmt = $pdo->prepare(
 );
 $stmt->execute([$userId]);
 $wishlistItems = $stmt->fetchAll();
+$wishlistCount = count($wishlistItems);
+
+/* ==========================================
+   CART COUNT (for the navbar icon)
+========================================== */
+
+$cartCountStmt = $pdo->prepare(
+    "SELECT COALESCE(SUM(quantity), 0) AS total FROM cart WHERE user_id = ?"
+);
+$cartCountStmt->execute([$userId]);
+$cartCount = $cartCountStmt->fetch()['total'];
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -47,22 +58,40 @@ unset($_SESSION['flash']);
 
 <header>
     <nav class="navbar">
+
         <div class="logo">
             <img class="plogo" src="../homepage/images/pustakmandi.jpg" alt="PustakMandi Logo">
             <h2>PustakMandi</h2>
         </div>
+
         <ul class="nav-links">
             <li><a href="dashboard.php">Home</a></li>
             <li><a href="products.php">Products</a></li>
             <li><a href="cart.php">Cart</a></li>
         </ul>
-        <div class="profile">
-            <div class="profile-icon"><i class="fa-solid fa-user"></i></div>
-            <div class="profile-info">
-                <strong><?php echo htmlspecialchars($fullName); ?></strong>
-                <small>Customer</small>
+
+        <div class="icons">
+
+            <a href="wishlist.php" class="icon">
+                <i class="fa-solid fa-heart"></i>
+                <span>Wishlist (<?php echo (int) $wishlistCount; ?>)</span>
+            </a>
+
+            <a href="cart.php" class="icon">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Cart (<?php echo (int) $cartCount; ?>)</span>
+            </a>
+
+            <div class="profile">
+                <div class="profile-icon"><i class="fa-solid fa-user"></i></div>
+                <div class="profile-info">
+                    <strong><?php echo htmlspecialchars($fullName); ?></strong>
+                    <small>Customer</small>
+                </div>
             </div>
+
         </div>
+
     </nav>
 </header>
 
@@ -76,7 +105,7 @@ unset($_SESSION['flash']);
 
     <div class="section-title">
         <h2>Your Wishlist</h2>
-        <p><?php echo count($wishlistItems); ?> item<?php echo count($wishlistItems) === 1 ? '' : 's'; ?> saved</p>
+        <p><?php echo $wishlistCount; ?> item<?php echo $wishlistCount === 1 ? '' : 's'; ?> saved</p>
     </div>
 
     <?php if (empty($wishlistItems)): ?>

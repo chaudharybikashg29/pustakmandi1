@@ -2,6 +2,7 @@
 
 session_start();
 require_once '../config/db.php';
+require_once '../includes/image_upload.php';
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'seller') {
     header("Location: ../homepage/html/login.html");
@@ -25,11 +26,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $price       = (float) ($_POST['price'] ?? 0);
     $oldPrice    = trim($_POST['old_price'] ?? '');
     $categoryId  = (int) ($_POST['category_id'] ?? 0);
-    $image       = trim($_POST['image'] ?? '');
     $stock       = max(0, (int) ($_POST['stock'] ?? 0));
 
-    if ($title === '' || $price <= 0 || $categoryId === 0 || $image === '') {
-        $error = "Please fill in title, price, category, and image URL.";
+    $upload = handleProductImageUpload($_FILES['image'] ?? []);
+
+    if ($title === '' || $price <= 0 || $categoryId === 0) {
+        $error = "Please fill in title, price, and category.";
+    } elseif ($upload['error']) {
+        $error = $upload['error'];
+    } elseif (!$upload['success']) {
+        $error = "Please choose a product image.";
     } else {
 
         $oldPriceValue = ($oldPrice !== '' && (float) $oldPrice > $price) ? (float) $oldPrice : null;
@@ -40,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         $stmt->execute([
             $title, $description, $price, $oldPriceValue,
-            $categoryId, $sellerId, $image, $stock
+            $categoryId, $sellerId, $upload['path'], $stock
         ]);
 
         $_SESSION['flash'] = "\"{$title}\" was listed successfully.";
@@ -105,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="form-card">
 
-        <form action="add_product.php" method="post">
+        <form action="add_product.php" method="post" enctype="multipart/form-data">
 
             <div class="form-group">
                 <label>Product Title</label>
@@ -154,12 +160,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="form-group">
-                <label>Image URL</label>
-                <input type="url" name="image" required
-                       value="<?php echo htmlspecialchars($_POST['image'] ?? ''); ?>"
-                       placeholder="https://...">
+                <label>Product Image</label>
+                <input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif" required>
                 <small style="color:var(--gray);">
-                    File upload isn't wired up yet — paste a direct image link for now.
+                    JPG, PNG, WEBP, or GIF, up to 2MB.
                 </small>
             </div>
 

@@ -2,6 +2,7 @@
 
 session_start();
 require_once '../config/db.php';
+require_once '../includes/image_upload.php';
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'seller') {
     header("Location: ../homepage/html/login.html");
@@ -26,8 +27,16 @@ switch ($action) {
        just by guessing a product_id in the form.
     --------------------------------- */
     case 'delete':
+        $stmt = $pdo->prepare("SELECT image FROM products WHERE id = ? AND seller_id = ?");
+        $stmt->execute([$productId, $sellerId]);
+        $product = $stmt->fetch();
+
         $stmt = $pdo->prepare("DELETE FROM products WHERE id = ? AND seller_id = ?");
         $stmt->execute([$productId, $sellerId]);
+
+        if ($stmt->rowCount() > 0 && $product) {
+            deleteProductImage($product['image']);
+        }
 
         $_SESSION['flash'] = $stmt->rowCount() > 0
             ? "Listing deleted."

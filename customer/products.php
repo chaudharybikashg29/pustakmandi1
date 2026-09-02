@@ -62,6 +62,7 @@ $products = $stmt->fetchAll();
 $wishlistStmt = $pdo->prepare("SELECT product_id FROM wishlist WHERE user_id = ?");
 $wishlistStmt->execute([$_SESSION['user_id']]);
 $wishlistedIds = array_column($wishlistStmt->fetchAll(), 'product_id');
+$wishlistCount = count($wishlistedIds);
 
 /* ==========================================
    CART COUNT (for the navbar icon)
@@ -135,7 +136,7 @@ unset($_SESSION['flash']);
 
             <a href="wishlist.php" class="icon">
                 <i class="fa-solid fa-heart"></i>
-                <span>Wishlist</span>
+                <span>Wishlist (<?php echo (int) $wishlistCount; ?>)</span>
             </a>
 
             <a href="cart.php" class="icon">

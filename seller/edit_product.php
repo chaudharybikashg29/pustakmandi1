@@ -2,6 +2,7 @@
 
 session_start();
 require_once '../config/db.php';
+require_once '../includes/image_upload.php';
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'seller') {
     header("Location: ../homepage/html/login.html");
@@ -40,13 +41,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $price       = (float) ($_POST['price'] ?? 0);
     $oldPrice    = trim($_POST['old_price'] ?? '');
     $categoryId  = (int) ($_POST['category_id'] ?? 0);
-    $image       = trim($_POST['image'] ?? '');
     $stock       = max(0, (int) ($_POST['stock'] ?? 0));
 
-    if ($title === '' || $price <= 0 || $categoryId === 0 || $image === '') {
-        $error = "Please fill in title, price, category, and image URL.";
-        $product = array_merge($product, $_POST); // repopulate the form with attempted values
+    $upload   = handleProductImageUpload($_FILES['image'] ?? []);
+    $imageUrl = $product['image']; // keep existing unless a new file was chosen
+
+    if ($title === '' || $price <= 0 || $categoryId === 0) {
+        $error = "Please fill in title, price, and category.";
+        $product = array_merge($product, $_POST);
+    } elseif ($upload['error']) {
+        $error = $upload['error'];
+        $product = array_merge($product, $_POST);
     } else {
+
+        if ($upload['success']) {
+            deleteProductImage($product['image']); // remove the old file, only if it was our own upload
+            $imageUrl = $upload['path'];
+        }
 
         $oldPriceValue = ($oldPrice !== '' && (float) $oldPrice > $price) ? (float) $oldPrice : null;
 
@@ -57,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         $stmt->execute([
             $title, $description, $price, $oldPriceValue,
-            $categoryId, $image, $stock, $productId, $sellerId
+            $categoryId, $imageUrl, $stock, $productId, $sellerId
         ]);
 
         $_SESSION['flash'] = "\"{$title}\" was updated successfully.";
@@ -122,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="form-card">
 
-        <form action="edit_product.php?id=<?php echo $productId; ?>" method="post">
+        <form action="edit_product.php?id=<?php echo $productId; ?>" method="post" enctype="multipart/form-data">
 
             <div class="form-group">
                 <label>Product Title</label>
@@ -168,9 +179,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="form-group">
-                <label>Image URL</label>
-                <input type="url" name="image" required
-                       value="<?php echo htmlspecialchars($product['image']); ?>">
+                <label>Current Image</label>
+                <img src="<?php echo htmlspecialchars($product['image']); ?>" alt=""
+                     style="width:100px; height:100px; object-fit:cover; border-radius:10px; display:block; margin-bottom:10px;">
+                <input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif">
+                <small style="color:var(--gray);">
+                    Leave empty to keep the current image. JPG, PNG, WEBP, or GIF, up to 2MB.
+                </small>
             </div>
 
             <div style="display:flex; gap:14px;">
