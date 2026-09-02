@@ -105,7 +105,7 @@ unset($_SESSION['flash']);
     <div class="top-left">📚 Buy • Sell • Exchange Campus Essentials</div>
     <div class="top-right">
         <a href="#">Help</a>
-        <a href="#">Become Seller</a>
+        <a href="../seller/dashboard.php">Become Seller</a>
     </div>
 </div>
 
