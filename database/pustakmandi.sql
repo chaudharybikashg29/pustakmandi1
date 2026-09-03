@@ -127,11 +127,10 @@ CREATE TABLE contact_messages (
 -- -----------------------------------------------------
 
 -- Default admin account (email: admin@pustakmandi.com / password: Admin@123)
-INSERT INTO users (name, email, password, role, status) VALUES
-('Site Admin', 'admin@pustakmandi.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'active');
--- NOTE: the hash above is a placeholder. Run reset-admin-password.php (see below) or
--- use PHP's password_hash('Admin@123', PASSWORD_DEFAULT) to generate a real one, then
--- UPDATE users SET password = '<hash>' WHERE email = 'admin@pustakmandi.com';
+INSERT INTO users (full_name, username, email, password, role, status)
+VALUES ('Admin', 'newadmin', 'newadmin@pustakmandi.com', 
+        '$2b$10$b1j3O29UGGDWSWHzH67Zz.8F3Sre.0EZxk1hIAmEE117DBojLkaQy', 
+        'admin', 'active');
 
 INSERT INTO categories (name, icon) VALUES
 ('Books',       'fa-solid fa-book'),
