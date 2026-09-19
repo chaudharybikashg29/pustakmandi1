@@ -17,8 +17,7 @@ $userId  = $_SESSION['user_id'];
 $orderId = (int) ($_POST['order_id'] ?? 0);
 $action  = $_POST['action'] ?? '';
 
-/* Ownership check — this order must belong to the logged-in customer */
-$stmt = $pdo->prepare("SELECT status FROM orders WHERE id = ? AND user_id = ?");
+$stmt = $pdo->prepare("SELECT status, payment_status FROM orders WHERE id = ? AND user_id = ?");
 $stmt->execute([$orderId, $userId]);
 $order = $stmt->fetch();
 
@@ -26,11 +25,6 @@ if ($order) {
 
     switch ($action) {
 
-        /* ---------------------------------
-           MARK AS RECEIVED
-           Only valid coming from "shipped" — a buyer can't
-           mark something delivered that was never shipped.
-        --------------------------------- */
         case 'mark_received':
             if ($order['status'] === 'shipped') {
                 $stmt = $pdo->prepare("UPDATE orders SET status = 'delivered' WHERE id = ? AND user_id = ?");
@@ -43,17 +37,33 @@ if ($order) {
 
         /* ---------------------------------
            CANCEL
-           Only allowed before it's shipped — once it's on
-           its way, cancelling is between the buyer and seller directly.
+           If this order was already paid for (eSewa), cancelling doesn't
+           refund anything automatically — no gateway we use offers that
+           as a simple API call. Instead it's flagged refund_status =
+           'requested', which shows up for an admin to process the actual
+           refund manually (bank transfer, eSewa merchant dashboard, etc.)
+           and mark it done from admin/orders.php.
         --------------------------------- */
         case 'cancel':
             if (in_array($order['status'], ['pending', 'confirmed'], true)) {
                 $reason = trim($_POST['reason'] ?? '') ?: 'Cancelled by buyer';
+
+                $needsRefund = $order['payment_status'] === 'paid';
+
                 $stmt = $pdo->prepare(
-                    "UPDATE orders SET status = 'cancelled', cancel_reason = ? WHERE id = ? AND user_id = ?"
+                    "UPDATE orders
+                     SET status = 'cancelled', cancel_reason = ?, refund_status = ?
+                     WHERE id = ? AND user_id = ?"
                 );
-                $stmt->execute([$reason, $orderId, $userId]);
-                $_SESSION['flash'] = "Order #{$orderId} has been cancelled.";
+                $stmt->execute([
+                    $reason,
+                    $needsRefund ? 'requested' : 'none',
+                    $orderId, $userId
+                ]);
+
+                $_SESSION['flash'] = $needsRefund
+                    ? "Order #{$orderId} cancelled. Since you already paid, a refund has been requested — this is processed manually, so allow some time."
+                    : "Order #{$orderId} has been cancelled.";
             } else {
                 $_SESSION['flash'] = "This order can no longer be cancelled.";
             }

@@ -17,7 +17,15 @@ $fullName = $_SESSION['full_name'] ?? 'Admin';
 $statusFilter = $_GET['status'] ?? 'all';
 $allowedStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 
-if (in_array($statusFilter, $allowedStatuses, true)) {
+if ($statusFilter === 'refunds') {
+    $stmt = $pdo->query(
+        "SELECT o.*, u.full_name AS buyer_name, u.email AS buyer_email
+         FROM orders o
+         JOIN users u ON u.user_id = o.user_id
+         WHERE o.refund_status = 'requested'
+         ORDER BY o.created_at DESC"
+    );
+} elseif (in_array($statusFilter, $allowedStatuses, true)) {
     $stmt = $pdo->prepare(
         "SELECT o.*, u.full_name AS buyer_name, u.email AS buyer_email
          FROM orders o
@@ -124,6 +132,9 @@ $statusColors = [
 
     <div class="filter-tabs">
         <a href="orders.php" class="<?php echo $statusFilter === 'all' ? 'active' : ''; ?>">All</a>
+        <a href="orders.php?status=refunds" class="<?php echo $statusFilter === 'refunds' ? 'active' : ''; ?>" style="<?php echo $statusFilter === 'refunds' ? '' : 'background:#fef9c3; color:#854d0e;'; ?>">
+            Refunds Needed
+        </a>
         <?php foreach ($allowedStatuses as $status): ?>
             <a href="orders.php?status=<?php echo $status; ?>"
                class="<?php echo $statusFilter === $status ? 'active' : ''; ?>">
@@ -197,8 +208,25 @@ $statusColors = [
                     </div>
 
                     <?php if ($order['status'] === 'cancelled' && !empty($order['cancel_reason'])): ?>
-                        <div style="font-size:13px; color:#991b1b; background:#fee2e2; padding:10px 14px; border-radius:8px; margin-bottom:16px;">
-                            Cancelled: <?php echo htmlspecialchars($order['cancel_reason']); ?>
+                        <div style="font-size:13px; color:#991b1b; background:#fee2e2; padding:10px 14px; border-radius:8px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                            <span>
+                                Cancelled: <?php echo htmlspecialchars($order['cancel_reason']); ?>
+                                <?php if ($order['refund_status'] === 'requested'): ?>
+                                    <br><strong style="color:#854d0e;">Refund requested — money not yet returned.</strong>
+                                <?php elseif ($order['refund_status'] === 'refunded'): ?>
+                                    <br><strong style="color:#166534;">Refunded.</strong>
+                                <?php endif; ?>
+                            </span>
+                            <?php if ($order['refund_status'] === 'requested'): ?>
+                                <form action="refund_actions.php" method="post">
+                                    <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
+                                    <input type="hidden" name="redirect" value="orders.php<?php echo !empty($_SERVER['QUERY_STRING']) ? '?' . htmlspecialchars($_SERVER['QUERY_STRING']) : ''; ?>">
+                                    <button type="submit" style="border:none; background:#166534; color:white; padding:8px 16px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;"
+                                            onclick="return confirm('Only click this after you\'ve actually sent the refund manually (bank transfer / eSewa dashboard). This just marks it as done here — it does not move any money.');">
+                                        Mark as Refunded
+                                    </button>
+                                </form>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
 
@@ -236,4 +264,4 @@ $statusColors = [
 
 </body>
 
-</html> 
+</html>

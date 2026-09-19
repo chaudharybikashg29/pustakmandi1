@@ -11,13 +11,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'customer') {
 $userId   = $_SESSION['user_id'];
 $fullName = $_SESSION['full_name'] ?? 'Customer';
 
-/* ==========================================
-   FETCH THIS CUSTOMER'S ORDERS
-========================================== */
-
-$stmt = $pdo->prepare(
-    "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC"
-);
+$stmt = $pdo->prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC");
 $stmt->execute([$userId]);
 $orders = $stmt->fetchAll();
 
@@ -147,13 +141,18 @@ $statusColors = [
                                 <?php echo date('M j, Y', strtotime($order['created_at'])); ?>
                             </span>
                         </div>
-                        <div style="display:flex; gap:8px; align-items:center;">
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                             <?php if ($order['payment_method'] === 'esewa'): ?>
                                 <span class="badge" style="background:<?php echo $order['payment_status'] === 'paid' ? '#dcfce7' : '#fee2e2'; ?>; color:<?php echo $order['payment_status'] === 'paid' ? '#166534' : '#991b1b'; ?>;">
                                     eSewa · <?php echo ucfirst($order['payment_status']); ?>
                                 </span>
                             <?php else: ?>
                                 <span class="badge" style="background:#f1f5f9; color:#334155;">Cash on Delivery</span>
+                            <?php endif; ?>
+                            <?php if ($order['refund_status'] === 'requested'): ?>
+                                <span class="badge" style="background:#fef9c3; color:#854d0e;">Refund Requested</span>
+                            <?php elseif ($order['refund_status'] === 'refunded'): ?>
+                                <span class="badge" style="background:#dcfce7; color:#166534;">Refunded</span>
                             <?php endif; ?>
                             <span class="badge" style="background:<?php echo $color['bg']; ?>; color:<?php echo $color['text']; ?>;">
                                 <?php echo ucfirst($order['status']); ?>
@@ -164,6 +163,11 @@ $statusColors = [
                     <?php if ($order['status'] === 'cancelled' && !empty($order['cancel_reason'])): ?>
                         <div style="font-size:13px; color:#991b1b; background:#fee2e2; padding:10px 14px; border-radius:8px; margin-bottom:16px;">
                             Cancelled: <?php echo htmlspecialchars($order['cancel_reason']); ?>
+                            <?php if ($order['refund_status'] === 'requested'): ?>
+                                <br><span style="color:#854d0e;">Refund requested — an admin will process this manually.</span>
+                            <?php elseif ($order['refund_status'] === 'refunded'): ?>
+                                <br><span style="color:#166534;">Refund completed.</span>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
 
@@ -199,7 +203,7 @@ $statusColors = [
                             <?php endif; ?>
 
                             <?php if (in_array($order['status'], ['pending', 'confirmed'], true)): ?>
-                                <form action="order_actions.php" method="post" onsubmit="return setReason(this);">
+                                <form action="order_actions.php" method="post" onsubmit="return setReason(this, <?php echo $order['payment_status'] === 'paid' ? 'true' : 'false'; ?>);">
                                     <input type="hidden" name="action" value="cancel">
                                     <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
                                     <input type="hidden" name="reason" class="cancel-reason-field">
@@ -224,8 +228,11 @@ $statusColors = [
 </section>
 
 <script>
-function setReason(form) {
-    const reason = prompt("Why are you cancelling this order?");
+function setReason(form, isPaid) {
+    const msg = isPaid
+        ? "Why are you cancelling this order? (You already paid — this will request a refund.)"
+        : "Why are you cancelling this order?";
+    const reason = prompt(msg);
     if (reason === null) return false;
     form.querySelector('.cancel-reason-field').value = reason;
     return true;
