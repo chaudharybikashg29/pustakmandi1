@@ -281,10 +281,12 @@ $email = $_SESSION['email'] ?? '';
         <div class="product-card">
 
             <button class="wishlist-btn">
+                
 
                 <i class="fa-regular fa-heart"></i>
 
             </button>
+            
 
             <img
                 src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500"

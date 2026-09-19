@@ -2,6 +2,7 @@
 
 session_start();
 require_once '../config/db.php';
+require_once '../includes/esewa.php';
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'customer') {
     header("Location: ../homepage/html/login.html");
@@ -11,25 +12,26 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'customer') {
 $userId   = $_SESSION['user_id'];
 $fullName = $_SESSION['full_name'] ?? '';
 
+$orderPlaced   = false;
+$esewaRedirect = null; // holds the auto-submit form fields when paying via eSewa
+$orderId       = null;
+$error         = null;
+
 /* ==========================================
    HANDLE ORDER PLACEMENT
 ========================================== */
 
-$orderPlaced = false;
-$orderId     = null;
-$error       = null;
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $shipName  = trim($_POST['full_name'] ?? '');
-    $shipPhone = trim($_POST['phone'] ?? '');
-    $shipAddr  = trim($_POST['address'] ?? '');
+    $shipName      = trim($_POST['full_name'] ?? '');
+    $shipPhone     = trim($_POST['phone'] ?? '');
+    $shipAddr      = trim($_POST['address'] ?? '');
+    $paymentMethod = ($_POST['payment_method'] ?? 'cod') === 'esewa' ? 'esewa' : 'cod';
 
     if ($shipName === '' || $shipPhone === '' || $shipAddr === '') {
         $error = "Please fill in all shipping details.";
     } else {
 
-        // Re-fetch cart at the moment of purchase (never trust client-side totals)
         $stmt = $pdo->prepare(
             "SELECT c.product_id, c.quantity, p.price, p.stock, p.title
              FROM cart c JOIN products p ON p.id = c.product_id
@@ -42,7 +44,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "Your cart is empty.";
         } else {
 
-            // Make sure nothing went out of stock since it was added
             foreach ($cartItems as $item) {
                 if ($item['quantity'] > $item['stock']) {
                     $error = "\"{$item['title']}\" only has {$item['stock']} left in stock.";
@@ -57,14 +58,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $total += $item['price'] * $item['quantity'];
                 }
 
+                $transactionUuid = $paymentMethod === 'esewa'
+                    ? date('Ymd-His') . '-' . uniqid()
+                    : null;
+
                 try {
                     $pdo->beginTransaction();
 
                     $stmt = $pdo->prepare(
-                        "INSERT INTO orders (user_id, full_name, phone, address, total_amount, status)
-                         VALUES (?, ?, ?, ?, ?, 'pending')"
+                        "INSERT INTO orders
+                            (user_id, full_name, phone, address, total_amount, status,
+                             payment_method, payment_status, transaction_uuid)
+                         VALUES (?, ?, ?, ?, ?, 'pending', ?, 'unpaid', ?)"
                     );
-                    $stmt->execute([$userId, $shipName, $shipPhone, $shipAddr, $total]);
+                    $stmt->execute([
+                        $userId, $shipName, $shipPhone, $shipAddr, $total,
+                        $paymentMethod, $transactionUuid
+                    ]);
                     $orderId = $pdo->lastInsertId();
 
                     $itemStmt  = $pdo->prepare(
@@ -83,7 +93,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->prepare("DELETE FROM cart WHERE user_id = ?")->execute([$userId]);
 
                     $pdo->commit();
-                    $orderPlaced = true;
+
+                    if ($paymentMethod === 'esewa') {
+
+                        // Don't show a confirmation yet — the order exists but is
+                        // unpaid until eSewa's callback confirms the payment.
+                        $fields = [
+                            'amount'                 => number_format($total, 2, '.', ''),
+                            'tax_amount'              => '0',
+                            'total_amount'            => number_format($total, 2, '.', ''),
+                            'transaction_uuid'        => $transactionUuid,
+                            'product_code'            => ESEWA_PRODUCT_CODE,
+                            'product_service_charge'  => '0',
+                            'product_delivery_charge' => '0',
+                            'success_url'             => (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/esewa_success.php',
+                            'failure_url'             => (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/esewa_failure.php',
+                            'signed_field_names'      => 'total_amount,transaction_uuid,product_code',
+                        ];
+                        $fields['signature'] = esewaGenerateSignature(
+                            $fields,
+                            ['total_amount', 'transaction_uuid', 'product_code'],
+                            ESEWA_SECRET_KEY
+                        );
+
+                        $esewaRedirect = $fields;
+
+                    } else {
+                        $orderPlaced = true;
+                    }
 
                 } catch (Exception $e) {
                     $pdo->rollBack();
@@ -95,13 +132,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 /* ==========================================
-   FETCH CART FOR DISPLAY (if not yet placed)
+   FETCH CART FOR DISPLAY (if nothing happened above)
 ========================================== */
 
 $cartItems = [];
 $total     = 0;
 
-if (!$orderPlaced) {
+if (!$orderPlaced && !$esewaRedirect) {
     $stmt = $pdo->prepare(
         "SELECT c.quantity, p.title, p.price
          FROM cart c JOIN products p ON p.id = c.product_id
@@ -148,9 +185,24 @@ if (!$orderPlaced) {
 
 <section style="padding:60px 8%; max-width:700px; margin:0 auto;">
 
-    <?php if ($orderPlaced): ?>
+    <?php if ($esewaRedirect): ?>
 
-        <!-- ORDER CONFIRMATION -->
+        <!-- AUTO-SUBMITTING FORM — redirects to eSewa's sandbox payment page -->
+        <div style="text-align:center; background:white; border-radius:20px; padding:50px 30px; box-shadow:0 10px 30px rgba(0,0,0,.08);">
+            <i class="fa-solid fa-circle-notch fa-spin" style="font-size:40px; color:var(--primary); margin-bottom:20px;"></i>
+            <h2 style="margin-bottom:12px;">Redirecting to eSewa…</h2>
+            <p style="color:var(--gray);">Order #<?php echo $orderId; ?> created. Please wait, do not close this page.</p>
+        </div>
+
+        <form id="esewaForm" action="<?php echo ESEWA_FORM_URL; ?>" method="POST">
+            <?php foreach ($esewaRedirect as $name => $value): ?>
+                <input type="hidden" name="<?php echo htmlspecialchars($name); ?>" value="<?php echo htmlspecialchars($value); ?>">
+            <?php endforeach; ?>
+        </form>
+        <script>document.getElementById('esewaForm').submit();</script>
+
+    <?php elseif ($orderPlaced): ?>
+
         <div style="text-align:center; background:white; border-radius:20px; padding:50px 30px; box-shadow:0 10px 30px rgba(0,0,0,.08);">
             <i class="fa-solid fa-circle-check" style="font-size:60px; color:#22c55e; margin-bottom:20px;"></i>
             <h2 style="margin-bottom:12px;">Order Placed Successfully!</h2>
@@ -171,7 +223,7 @@ if (!$orderPlaced) {
 
         <div class="section-title">
             <h2>Checkout</h2>
-            <p>Confirm your details to place the order.</p>
+            <p>Confirm your details and choose how to pay.</p>
         </div>
 
         <?php if ($error): ?>
@@ -180,7 +232,6 @@ if (!$orderPlaced) {
             </div>
         <?php endif; ?>
 
-        <!-- ORDER SUMMARY -->
         <div style="background:white; border-radius:16px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,.06); margin-bottom:30px;">
             <?php foreach ($cartItems as $item): ?>
                 <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f1f5f9;">
@@ -194,7 +245,6 @@ if (!$orderPlaced) {
             </div>
         </div>
 
-        <!-- SHIPPING FORM -->
         <form action="checkout.php" method="post" style="background:white; border-radius:16px; padding:26px; box-shadow:0 10px 30px rgba(0,0,0,.06);">
 
             <div style="margin-bottom:18px;">
@@ -216,8 +266,22 @@ if (!$orderPlaced) {
                           style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; font-family:inherit;"></textarea>
             </div>
 
+            <div style="margin-bottom:24px;">
+                <label style="display:block; margin-bottom:10px; font-weight:600;">Payment Method</label>
+
+                <label style="display:flex; align-items:center; gap:10px; padding:14px; border:1px solid #ddd; border-radius:10px; margin-bottom:10px; cursor:pointer;">
+                    <input type="radio" name="payment_method" value="cod" checked>
+                    <span>Cash on Delivery</span>
+                </label>
+
+                <label style="display:flex; align-items:center; gap:10px; padding:14px; border:1px solid #ddd; border-radius:10px; cursor:pointer;">
+                    <input type="radio" name="payment_method" value="esewa">
+                    <span>Pay with eSewa (test sandbox)</span>
+                </label>
+            </div>
+
             <button type="submit" class="btn" style="width:100%; border:none; cursor:pointer;">
-                Place Order — Cash on Delivery
+                Place Order
             </button>
 
         </form>

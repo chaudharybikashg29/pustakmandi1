@@ -21,7 +21,6 @@ $stmt = $pdo->prepare(
 $stmt->execute([$userId]);
 $orders = $stmt->fetchAll();
 
-/* Fetch line items for each order in one extra query, grouped by order_id */
 $itemsByOrder = [];
 if (!empty($orders)) {
     $orderIds = array_column($orders, 'id');
@@ -76,7 +75,7 @@ $statusColors = [
     <div class="top-left">📚 Buy • Sell • Exchange Campus Essentials</div>
     <div class="top-right">
         <a href="#">Help</a>
-        <a href="../seller/dashboard.php">Become Seller</a>
+        <a href="#">Become Seller</a>
     </div>
 </div>
 
@@ -148,9 +147,18 @@ $statusColors = [
                                 <?php echo date('M j, Y', strtotime($order['created_at'])); ?>
                             </span>
                         </div>
-                        <span class="badge" style="background:<?php echo $color['bg']; ?>; color:<?php echo $color['text']; ?>;">
-                            <?php echo ucfirst($order['status']); ?>
-                        </span>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <?php if ($order['payment_method'] === 'esewa'): ?>
+                                <span class="badge" style="background:<?php echo $order['payment_status'] === 'paid' ? '#dcfce7' : '#fee2e2'; ?>; color:<?php echo $order['payment_status'] === 'paid' ? '#166534' : '#991b1b'; ?>;">
+                                    eSewa · <?php echo ucfirst($order['payment_status']); ?>
+                                </span>
+                            <?php else: ?>
+                                <span class="badge" style="background:#f1f5f9; color:#334155;">Cash on Delivery</span>
+                            <?php endif; ?>
+                            <span class="badge" style="background:<?php echo $color['bg']; ?>; color:<?php echo $color['text']; ?>;">
+                                <?php echo ucfirst($order['status']); ?>
+                            </span>
+                        </div>
                     </div>
 
                     <?php if ($order['status'] === 'cancelled' && !empty($order['cancel_reason'])): ?>
